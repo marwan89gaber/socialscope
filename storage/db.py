@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import uuid
 from datetime import datetime
@@ -5,7 +6,9 @@ from config import DATABASE_PATH
 
 
 def get_connection():
+    os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
     return sqlite3.connect(DATABASE_PATH)
+
 
 
 def init_db():
