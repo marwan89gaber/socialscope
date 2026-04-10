@@ -75,6 +75,8 @@ def process_link(url: str):
     print(f"\nPost title: {post['title']}")
     print(f"Author:     {post['author']}")
     print(f"Subreddit:  r/{post['subreddit']}")
+    print(f"Type:       {post['content_type']}")
+    print(f"Score:      {post['score']}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,14 @@
 from urllib.parse import urlparse
 
 PLATFORM_PATTERNS = {
-    "reddit": ["reddit.com", "www.reddit.com", "old.reddit.com"],
+    "reddit": [
+        "reddit.com",
+        "www.reddit.com",
+        "old.reddit.com",
+        "m.reddit.com",
+        "np.reddit.com",
+        "redd.it",
+    ],
 }
 
 def detect_platform(url: str) -> str:
