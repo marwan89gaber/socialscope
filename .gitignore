@@ -1,4 +1,18 @@
+# secrets
 .env
-data/
-outputs/
-input/S
+
+# runtime folders
+data/*
+outputs/*
+input/*
+
+# keep the folders themselves
+!data/.gitkeep
+!outputs/.gitkeep
+!input/.gitkeep
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
