@@ -9,7 +9,7 @@ input/*
 # keep the folders themselves
 !data/.gitkeep
 !outputs/.gitkeep
-!input/.gitkeep
+!inputs/.gitkeep
 
 # python
 __pycache__/
