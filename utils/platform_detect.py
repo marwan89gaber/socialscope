@@ -8,6 +8,10 @@ PLATFORM_PATTERNS = {
         "m.reddit.com",
         "np.reddit.com",
         "redd.it",
+        "www.redd.it",
+        "m.redd.it",
+        "np.redd.it",
+        "m.reddit.com",
     ],
 }
 
