@@ -22,8 +22,10 @@ def extract_frames(job_id: str, video_path: str, fps: float = 0.5) -> str:
         raise Exception(f"FFmpeg frame extraction failed: {e.stderr.decode()}")
 
     extracted = sorted(os.listdir(frames_dir))
-    if not extracted:
+    if len(extracted) == 0:
         raise Exception("Frame extraction produced no output files.")
+    if len(extracted) < 3:
+        print(f"Warning: Only {len(extracted)} frame(s) extracted - video may be very short.")
 
     print(f"Extracted {len(extracted)} frames to: {frames_dir}")
     return frames_dir

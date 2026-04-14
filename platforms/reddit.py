@@ -62,12 +62,18 @@ def fetch_reddit_post(url: str) -> dict:
     post_data = data[0]["data"]["children"][0]["data"]
 
     is_video = post_data.get("is_video", False)
+    is_gallery = post_data.get("is_gallery", False)
+    has_gallery_data = "gallery_data" in post_data
+
     url_value = post_data.get("url", "")
+
     if is_video:
         content_type = "video"
+    elif is_gallery or (has_gallery_data and url_value.endswith("/gallery/")):
+        content_type = "gallery"
     elif url_value.endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
         content_type = "image"
-    elif post_data.get("selftext", ""):
+    elif post_data.get("selftext", "").strip():
         content_type = "text"
     else:
         content_type = "link"
@@ -82,4 +88,5 @@ def fetch_reddit_post(url: str) -> dict:
         "score":        post_data.get("score", 0),
         "content_type": content_type,
         "is_video":     is_video,
+        "is_gallery":   is_gallery,
     }

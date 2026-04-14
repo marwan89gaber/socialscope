@@ -6,7 +6,7 @@ from config import OUTPUTS_DIR
 from platforms import fetch_reddit_post
 from storage import init_db, create_job, update_job_status, job_exists
 from utils import detect_platform, is_valid_url, is_reachable
-from media import download_video, extract_frames, extract_audio, transcribe_audio
+from media import download_video, download_image,  extract_frames, extract_audio, transcribe_audio
 
 
 def process_link(url: str):
@@ -32,17 +32,17 @@ def process_link(url: str):
         print("Could not reach this URL. It may be private or deleted.")
         return
 
-    # Step 4 — deduplication
+    # Step 4 — deduplication and creating job
     existing_job_id = job_exists(url)
     if existing_job_id:
         print(f"This link was already submitted. Job ID: {existing_job_id}")
-        return
+        job_id = existing_job_id
+    
+    else:
+        job_id = create_job(url, platform)
+        print(f"Job created. ID: {job_id}")
 
-    # Step 5 — create job
-    job_id = create_job(url, platform)
-    print(f"Job created. ID: {job_id}")
-
-    # Step 6 — fetch post data
+    # Step 5 — fetch post data
     update_job_status(job_id, "fetching")
     print("Fetching post data...")
 
@@ -56,7 +56,7 @@ def process_link(url: str):
         print(f"Failed to fetch post: {e}")
         return
 
-    # Step 7 — mark done and save output
+    # Step 6 — mark done and save output
     update_job_status(job_id, "fetched")
 
     """output = {
@@ -110,6 +110,23 @@ def process_link(url: str):
             update_job_status(job_id, "failed", error=str(e))
             print(f"Media pipeline failed: {e}")
             return
+        
+    elif post["content_type"] == "image":
+        print("Image post detected — saving as image...")
+
+        try:
+            update_job_status(job_id, "downloading_image")
+            frames_dir = download_image(job_id, post["url"])
+
+            media = {
+                "frames_dir": frames_dir,
+            }
+
+        except Exception as e:
+            update_job_status(job_id, "failed", error=str(e))
+            print(f"Image download failed: {e}")
+            return
+
         
 
     # Final output with media info
