@@ -1,10 +1,12 @@
 # secrets
+venv/
+.env/
 .env
 
 # runtime folders
 data/*
 outputs/*
-input/*
+inputs/*
 
 # keep the folders themselves
 !data/.gitkeep
@@ -16,3 +18,7 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+
+# IDE
+.vscode/
+.idea/
