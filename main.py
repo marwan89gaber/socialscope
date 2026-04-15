@@ -4,45 +4,63 @@ from datetime import datetime
 
 from config import OUTPUTS_DIR
 from platforms import fetch_reddit_post
-from storage import init_db, create_job, update_job_status, job_exists
+from storage import init_db, create_job, update_job_status, job_exists, get_status
 from utils import detect_platform, is_valid_url, is_reachable
-from media import download_video, download_image,  extract_frames, extract_audio, transcribe_audio
+from media import download_video, download_image, download_gallery, download_gif, extract_gif, extract_frames, extract_audio, transcribe_audio
 
 
 def process_link(url: str):
 
-    print("--- Social Lens ---")
+    # Step 1 — idempotency check and job creation
+    existing_job_id = job_exists(url)
+    if existing_job_id:
 
-    # Step 1 — validate
+        prev_status = get_status(existing_job_id)
+
+        if prev_status == "done":
+            print(f"This job has already been processed. You can view the output at:{os.path.join(OUTPUTS_DIR, f'{existing_job_id}.json')}")
+
+            reprocess = input("Would you like to reprocess this link? (y/n): ").strip().lower()
+            if reprocess == "y":                
+                print("Reprocessing the link...")
+                
+            else:
+                print("Exiting without reprocessing.")
+                return
+        
+        else:
+            print(f"This link was already submitted. Job ID: {existing_job_id}, current status: {prev_status}. Resuming processing.")
+            job_id = existing_job_id
+            platform = detect_platform(url)
+    
+
+    # Step 2 — validate URL
     if not is_valid_url(url):
         print("Invalid URL. Please enter a proper link.")
         return
-
-    # Step 2 — detect platform
+    
+    # Step 3 — detect platform
     platform = detect_platform(url)
     if platform == "unsupported":
         print("This platform is not supported yet.")
         return
 
     print(f"Platform detected: {platform}")
-
-    # Step 3 — reachability
+    
+    # Step 4 — reachability
     print("Checking if the post is reachable...")
     if not is_reachable(url):
         print("Could not reach this URL. It may be private or deleted.")
         return
-
-    # Step 4 — deduplication and creating job
-    existing_job_id = job_exists(url)
-    if existing_job_id:
-        print(f"This link was already submitted. Job ID: {existing_job_id}")
-        job_id = existing_job_id
     
-    else:
+    # Step 5 — create job
+    if not existing_job_id:
         job_id = create_job(url, platform)
         print(f"Job created. ID: {job_id}")
+    else:
+        job_id = existing_job_id
 
-    # Step 5 — fetch post data
+    # Step 6 — fetch post data
     update_job_status(job_id, "fetching")
     print("Fetching post data...")
 
@@ -56,28 +74,8 @@ def process_link(url: str):
         print(f"Failed to fetch post: {e}")
         return
 
-    # Step 6 — mark done and save output
+    # Step 7 — mark done and save output
     update_job_status(job_id, "fetched")
-
-    """output = {
-        "job_id":    job_id,
-        "url":       url,
-        "platform":  platform,
-        "fetched_at": datetime.utcnow().isoformat(),
-        "post":      post
-    }
-
-    os.makedirs(OUTPUTS_DIR, exist_ok=True)
-    output_path = os.path.join(OUTPUTS_DIR, f"{job_id}.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, ensure_ascii=False)
-
-    print(f"Done. Output saved to: {output_path}")
-    print(f"\nPost title: {post['title']}")
-    print(f"Author:     {post['author']}")
-    print(f"Subreddit:  r/{post['subreddit']}")
-    print(f"Type:       {post['content_type']}")
-    print(f"Score:      {post['score']}")"""
 
     media = {}
 
@@ -111,25 +109,63 @@ def process_link(url: str):
             print(f"Media pipeline failed: {e}")
             return
         
-    elif post["content_type"] == "image":
-        print("Image post detected — saving as image...")
+    elif  post["content_type"] == "gallery":
+        print("Gallery detected — downloading multiple images...")
 
         try:
-            update_job_status(job_id, "downloading_image")
-            frames_dir = download_image(job_id, post["url"])
+            update_job_status(job_id, "downloading_gallery")
+            paths = download_gallery(job_id, post["gallery_urls"])
 
             media = {
-                "frames_dir": frames_dir,
+                "type": "gallery",
+                "paths": paths
             }
 
         except Exception as e:
             update_job_status(job_id, "failed", error=str(e))
-            print(f"Image download failed: {e}")
+            print(f"Gallery download failed: {e}")
             return
+
+
+    elif post["content_type"] == "image":
+        url = post["url"]
+
+        if url.endswith(".gif"):
+            print("GIF detected — extracting frames...")
+
+            try:
+                frames_dir = extract_gif(download_gif(job_id, url))
+
+                media = {
+                    "type": "gif",
+                    "frames_dir": frames_dir
+                }
+
+            except Exception as e:
+                update_job_status(job_id, "failed", error=str(e))
+                print(f"GIF processing failed: {e}")
+                return
+            
+        else:
+            print("Image detected")
+
+            try:
+                image_path = download_image(job_id, url)
+
+                media = {
+                    "type": "image",
+                    "path": image_path
+                }
+
+            except Exception as e:
+                update_job_status(job_id, "failed", error=str(e))
+                print(f"Image download failed: {e}")
+                return
+
 
         
 
-    # Final output with media info
+    # step 8 — mark done
     update_job_status(job_id, "done")
 
     output = {
@@ -146,7 +182,7 @@ def process_link(url: str):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
-    print(f"\nDone. Output saved to: {output_path}")
+    print(f"Done. Output saved to: {output_path}")
     print(f"Post title: {post['title']}")
     print(f"Author:     {post['author']}")
     print(f"Type:       {post['content_type']}")
@@ -157,5 +193,6 @@ def process_link(url: str):
 
 if __name__ == "__main__":
     init_db()
+    print("--- Social Lens ---\n")
     url = input("Paste a link: ").strip()
     process_link(url)

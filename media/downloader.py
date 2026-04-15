@@ -2,6 +2,7 @@ import os
 import yt_dlp
 import requests
 from config import INPUT_DIR, REDDIT_HEADERS
+from .frames import extract_gif
 
 
 def download_video(job_id: str, video_url: str) -> str:
@@ -27,16 +28,13 @@ def download_video(job_id: str, video_url: str) -> str:
     return output_path
 
 
-def download_image(job_id: str, image_url: str) -> str:
+def download_image(job_id: str, image_url: str, filename: str = "image.jpg") -> str:
     output_dir = os.path.join(INPUT_DIR, job_id)
     os.makedirs(output_dir, exist_ok=True)
 
-    output_path = os.path.join(output_dir, "image.jpg")
+    output_path = os.path.join(output_dir, filename)
 
     response = requests.get(image_url, headers=REDDIT_HEADERS, stream=True)
-
-    #print("Status:", response.status_code)
-    #print("Content-Type:", response.headers.get("Content-Type"))
 
     if response.status_code != 200:
         raise Exception(f"Failed to download image: {response.status_code}")
@@ -51,29 +49,50 @@ def download_image(job_id: str, image_url: str) -> str:
     #size = os.path.getsize(output_path)
     #print("Saved file size:", size)
 
-    if not image_url.endswith((".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp")):
-        raise Exception(f"URL does not appear to be an image: {image_url}")
-
     return output_path
 
 
-def download_gallery(job_id: str, image_urls: list[str]) -> list:
-    output_dir = os.path.join(INPUT_DIR, job_id, "gallery")
-    os.makedirs(output_dir, exist_ok=True)
-
+def download_gallery(job_id: str, image_urls: list[str]) -> list[str]:
+    
     saved_paths = []
 
     for idx, url in enumerate(image_urls, start=1):
-        ext = ".jpg"
-        if ".png" in url.lower():
-            ext = ".png"
-        elif ".webp" in url.lower():
-            ext = ".webp"
-        elif ".gif" in url.lower():
-            ext = ".gif"
+        if ".gif" in url.lower():
+            print(f"GIF detected in gallery ({idx})")
 
-        filename = f"image_{idx}{ext}"
-        saved_path = download_image(job_id, url, filename=filename)
-        saved_paths.append(saved_path)
+            gif_path = download_gif(job_id, url)
+            frames_dir = extract_gif(gif_path)
 
-    return output_dir
+            saved_paths.append({
+                "type": "gif",
+                "frames_dir": frames_dir
+            })
+        else:
+            ext = ".jpg"
+            if ".png" in url.lower():
+                ext = ".png"
+            elif ".webp" in url.lower():
+                ext = ".webp"
+
+            filename = f"image_{idx}{ext}"
+            path = download_image(job_id, url, filename=filename)
+            saved_paths.append(path)
+
+    return saved_paths
+
+def download_gif(job_id: str, gif_url: str) -> str:
+    output_dir = os.path.join(INPUT_DIR, job_id)
+    os.makedirs(output_dir, exist_ok=True)
+
+    gif_path = os.path.join(output_dir, "input.gif")
+
+    response = requests.get(gif_url, stream=True)
+    if response.status_code != 200:
+        raise Exception(f"Failed to download GIF: {response.status_code}")
+
+    with open(gif_path, "wb") as f:
+        for chunk in response.iter_content(1024):
+            if chunk:
+                f.write(chunk)
+
+    return gif_path

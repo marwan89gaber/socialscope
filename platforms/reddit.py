@@ -33,6 +33,23 @@ def resolve_reddit_url(url: str) -> str | None:
 
     return clean_url
 
+def extract_gallery_urls(post_data: dict) -> list[str]:
+    image_urls = []
+
+    gallery_data = post_data.get("gallery_data", {})
+    media_metadata = post_data.get("media_metadata", {})
+
+    for item in gallery_data.get("items", []):
+        media_id = item.get("media_id")
+        media = media_metadata.get(media_id, {})
+
+        if media.get("e") == "Image":
+            url = media.get("s", {}).get("u")
+            if url:
+                url = url.replace("&amp;", "&")
+                image_urls.append(url)
+
+    return image_urls
 
 def fetch_reddit_post(url: str) -> dict:
     json_url = resolve_reddit_url(url)
@@ -78,6 +95,8 @@ def fetch_reddit_post(url: str) -> dict:
     else:
         content_type = "link"
 
+    gallery_urls = extract_gallery_urls(post_data) if is_gallery else []
+
     return {
         "title":        post_data.get("title", ""),
         "text":         post_data.get("selftext", ""),
@@ -89,4 +108,5 @@ def fetch_reddit_post(url: str) -> dict:
         "content_type": content_type,
         "is_video":     is_video,
         "is_gallery":   is_gallery,
+        "gallery_urls": gallery_urls,
     }

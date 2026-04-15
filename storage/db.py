@@ -73,3 +73,7 @@ def job_exists(url: str) -> str | None:
     row = cursor.fetchone()
     conn.close()
     return row[0] if row else None
+
+def get_status(job_id: str) -> str:
+    job = get_job(job_id)
+    return job["status"] if job else "not found"
