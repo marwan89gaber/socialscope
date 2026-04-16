@@ -8,7 +8,7 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
 INPUT_DIR = os.path.join(BASE_DIR, "inputs")
 
-DATABASE_PATH = os.path.join(DATA_DIR, "scope.db")
+DATABASE_PATH = os.path.join(DATA_DIR, "social_scope.db")
 
 SUPPORTED_PLATFORMS = ["reddit"]
 

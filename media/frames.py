@@ -62,9 +62,6 @@ def extract_gif(gif_path: str, fps: float = 1.0) -> str:
         except EOFError:
             pass
 
-    if os.path.exists(gif_path):
-        os.remove(gif_path)
-
     return output_dir
 
 #def ask_for_fps() -> float:

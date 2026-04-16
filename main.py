@@ -5,7 +5,7 @@ from datetime import datetime
 from config import OUTPUTS_DIR
 from platforms import fetch_reddit_post
 from storage import init_db, create_job, update_job_status, job_exists, get_status, get_job
-from utils import detect_platform, is_valid_url, is_reachable
+from utils import detect_platform, is_valid_url, is_reachable, cleanup_all
 from media import download_video, download_image, download_gallery, download_gif, extract_gif, extract_frames, extract_audio, transcribe_audio
 
 

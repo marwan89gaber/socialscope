@@ -52,7 +52,7 @@ def download_image(job_id: str, image_url: str, filename: str = "image.jpg") -> 
     return output_path
 
 
-def download_gallery(job_id: str, image_urls: list[str]) -> list[str]:
+def download_gallery(job_id: str, image_urls: list[str]) -> list[dict]:
     
     saved_paths = []
 
@@ -76,7 +76,10 @@ def download_gallery(job_id: str, image_urls: list[str]) -> list[str]:
 
             filename = f"image_{idx}{ext}"
             path = download_image(job_id, url, filename=filename)
-            saved_paths.append(path)
+            saved_paths.append({
+                "type": "image",
+                "path": path
+            })
 
     return saved_paths
 
