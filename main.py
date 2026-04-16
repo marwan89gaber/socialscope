@@ -11,46 +11,38 @@ from media import download_video, download_image, download_gallery, download_gif
 
 def process_link(url: str):
 
-    # Step 1 — check and job creation
-    existing_job_id = job_exists(url)
-    if existing_job_id:
-
-        prev_status = get_status(existing_job_id)
-
-        if prev_status == "done":
-            print(f"This job has already been processed. You can view the output at:{os.path.join(OUTPUTS_DIR, f'{existing_job_id}.json')}")
-            return
-                        
-        else:
-            print(f"This link was already submitted. Job ID: {existing_job_id}, current status: {prev_status}. Resuming processing.")
-            job_id = existing_job_id
-            platform = detect_platform(url)
-    
-    # Step 2 — validate URL
+    # Step 1 — validate URL
     if not is_valid_url(url):
         print("Invalid URL. Please enter a proper link.")
         return
-    
-    # Step 3 — detect platform
+
+    # Step 2 — detect platform
     platform = detect_platform(url)
     if platform == "unsupported":
         print("This platform is not supported yet.")
         return
-
     print(f"Platform detected: {platform}")
-    
-    # Step 4 — reachability
+
+    # Step 3 — reachability check (verify before proceeding)
     print("Checking if the post is reachable...")
     if not is_reachable(url):
         print("Could not reach this URL. It may be private or deleted.")
         return
-    
-    # Step 5 — create job
-    if not existing_job_id:
+
+    # Step 4 — check for existing job
+    existing_job_id = job_exists(url)
+    if existing_job_id:
+        prev_status = get_status(existing_job_id)
+        if prev_status == "done":
+            print(f"This job has already been processed. You can view the output at: {os.path.join(OUTPUTS_DIR, f'{existing_job_id}.json')}")
+            return
+        else:
+            print(f"This link was already submitted. Job ID: {existing_job_id}, current status: {prev_status}. Resuming processing.")
+            job_id = existing_job_id
+    else:
+        # Step 5 — create new job
         job_id = create_job(url, platform)
         print(f"Job created. ID: {job_id}")
-    else:
-        job_id = existing_job_id
 
     # Step 6 — fetch post data
     update_job_status(job_id, "fetching")
