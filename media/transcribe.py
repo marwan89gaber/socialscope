@@ -1,5 +1,5 @@
 import whisper
-
+import torch
 
 _model_cache = {}
 
@@ -12,7 +12,8 @@ def transcribe_audio(audio_path: str, model_size: str = "base") -> dict:
     model = _model_cache[model_size]
 
     print("Transcribing audio...")
-    result = model.transcribe(audio_path, fp16=False)
+    fp16 = torch.cuda.is_available()
+    result = model.transcribe(audio_path, fp16=fp16)
 
     return {
         "text":     result["text"].strip(),

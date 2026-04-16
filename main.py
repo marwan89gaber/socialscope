@@ -4,14 +4,14 @@ from datetime import datetime
 
 from config import OUTPUTS_DIR
 from platforms import fetch_reddit_post
-from storage import init_db, create_job, update_job_status, job_exists, get_status
+from storage import init_db, create_job, update_job_status, job_exists, get_status, get_job
 from utils import detect_platform, is_valid_url, is_reachable
 from media import download_video, download_image, download_gallery, download_gif, extract_gif, extract_frames, extract_audio, transcribe_audio
 
 
 def process_link(url: str):
 
-    # Step 1 — idempotency check and job creation
+    # Step 1 — check and job creation
     existing_job_id = job_exists(url)
     if existing_job_id:
 
@@ -19,21 +19,13 @@ def process_link(url: str):
 
         if prev_status == "done":
             print(f"This job has already been processed. You can view the output at:{os.path.join(OUTPUTS_DIR, f'{existing_job_id}.json')}")
-
-            reprocess = input("Would you like to reprocess this link? (y/n): ").strip().lower()
-            if reprocess == "y":                
-                print("Reprocessing the link...")
-                
-            else:
-                print("Exiting without reprocessing.")
-                return
-        
+            return
+                        
         else:
             print(f"This link was already submitted. Job ID: {existing_job_id}, current status: {prev_status}. Resuming processing.")
             job_id = existing_job_id
             platform = detect_platform(url)
     
-
     # Step 2 — validate URL
     if not is_valid_url(url):
         print("Invalid URL. Please enter a proper link.")
@@ -128,13 +120,13 @@ def process_link(url: str):
 
 
     elif post["content_type"] == "image":
-        url = post["url"]
+        image_url = post["url"]
 
-        if url.endswith(".gif"):
+        if image_url.endswith(".gif"):
             print("GIF detected — extracting frames...")
 
             try:
-                frames_dir = extract_gif(download_gif(job_id, url))
+                frames_dir = extract_gif(download_gif(job_id, image_url))
 
                 media = {
                     "type": "gif",
@@ -150,7 +142,7 @@ def process_link(url: str):
             print("Image detected")
 
             try:
-                image_path = download_image(job_id, url)
+                image_path = download_image(job_id, image_url)
 
                 media = {
                     "type": "image",
@@ -161,10 +153,7 @@ def process_link(url: str):
                 update_job_status(job_id, "failed", error=str(e))
                 print(f"Image download failed: {e}")
                 return
-
-
         
-
     # step 8 — mark done
     update_job_status(job_id, "done")
 
@@ -193,6 +182,6 @@ def process_link(url: str):
 
 if __name__ == "__main__":
     init_db()
-    print("--- Social Lens ---\n")
+    print("--- Social Scope ---\n")
     url = input("Paste a link: ").strip()
     process_link(url)

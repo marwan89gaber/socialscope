@@ -11,7 +11,6 @@ PLATFORM_PATTERNS = {
         "www.redd.it",
         "m.redd.it",
         "np.redd.it",
-        "m.reddit.com",
     ],
 }
 

@@ -6,13 +6,11 @@ from PIL import Image
 from config import INPUT_DIR
 
 
-def extract_frames(job_id: str, video_path: str) -> str:
+def extract_frames(job_id: str, video_path: str, fps: float = 1.0) -> str:
     frames_dir = os.path.join(INPUT_DIR, job_id, "frames")
     os.makedirs(frames_dir, exist_ok=True)
 
     output_pattern = os.path.join(frames_dir, "frame_%04d.jpg")
-
-    fps = ask_for_fps()
 
     try:
         (
@@ -36,9 +34,8 @@ def extract_frames(job_id: str, video_path: str) -> str:
     return frames_dir
 
 
-def extract_gif(gif_path: str) -> str:
+def extract_gif(gif_path: str, fps: float = 1.0) -> str:
     output_dir = os.path.dirname(gif_path)
-    fps = ask_for_fps()
     frame_interval_ms = 1000 // fps
 
     with Image.open(gif_path) as im:
@@ -70,7 +67,7 @@ def extract_gif(gif_path: str) -> str:
 
     return output_dir
 
-def ask_for_fps() -> float:
+#def ask_for_fps() -> float:
     while True:
         try:
             fps_input = input("Enter desired FPS for extraction (default is 1): ").strip()
