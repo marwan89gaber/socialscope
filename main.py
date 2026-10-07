@@ -6,7 +6,21 @@ from config import OUTPUTS_DIR
 from platforms import fetch_reddit_post
 from storage import init_db, create_job, update_job_status, job_exists, get_status, get_job
 from utils import detect_platform, is_valid_url, is_reachable, cleanup_all
-from media import download_video, download_image, download_gallery, download_gif, extract_gif, extract_frames, extract_audio, transcribe_audio
+from media import download_video, download_image, download_gallery, download_gif, extract_gif, extract_frames, extract_audio, transcribe_audio, transcribe_video_to_txt
+
+
+def process_local_video(video_path: str):
+    if not os.path.isfile(video_path):
+        print(f"Video file not found: {video_path}")
+        return
+
+    print("Local video detected — transcribing directly to captions text...")
+
+    try:
+        output_path = transcribe_video_to_txt(video_path)
+        print(f"Captions saved to: {output_path}")
+    except Exception as e:
+        print(f"Local video transcription failed: {e}")
 
 
 def process_link(url: str):
@@ -171,9 +185,14 @@ def process_link(url: str):
         print(f"Transcript: {media['transcript']['text'][:100]}...")
 
 
-
 if __name__ == "__main__":
     init_db()
     print("--- Social Scope ---\n")
-    url = input("Paste a link: ").strip()
-    process_link(url)
+    source = input("Paste a link or full video file path: ").strip()
+
+    if os.path.isfile(source):
+        process_local_video(source)
+    else:
+        process_link(source)
+
+    #cleanup_all()
